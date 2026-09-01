@@ -1,0 +1,42 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "dependencyDashboard": true,
+  "labels": ["dependencies"],
+  "platformAutomerge": true,
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "addLabels": ["security"],
+    "automerge": true,
+    "automergeType": "pr"
+  },
+  "packageRules": [
+    {
+      "groupName": "teo-garcia shared configs",
+      "schedule": ["on the first day of the month"],
+      "automerge": false,
+      "reviewers": ["teo-garcia"],
+      "matchPackageNames": ["github.com/teo-garcia/**"]
+    },
+    {
+      "description": "golangci-lint is pinned in the Makefile and CI; bumping it can change lint output, so it needs review.",
+      "groupName": "golangci-lint",
+      "matchPackageNames": ["github.com/golangci/golangci-lint{/,}**"],
+      "schedule": ["on the first day of the month"],
+      "automerge": false,
+      "reviewers": ["teo-garcia"]
+    },
+    {
+      "groupName": "all dependencies",
+      "matchUpdateTypes": ["minor", "patch"],
+      "matchPackageNames": [
+        "!github.com/teo-garcia/**",
+        "!github.com/golangci/golangci-lint{/,}**"
+      ],
+      "schedule": ["on the first day of the month"],
+      "minimumReleaseAge": "3 days",
+      "automerge": true,
+      "automergeType": "pr"
+    }
+  ]
+}

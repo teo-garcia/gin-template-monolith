@@ -1,0 +1,24 @@
+# Attaches the app to the shared observability stack from
+# `observability-template-stack` (Prometheus, Tempo, Loki, Grafana).
+#
+#   docker compose -f docker-compose.yml -f docker-compose.observability.yml up
+services:
+  app:
+    environment:
+      OTEL_ENABLED: "true"
+      OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-gin-template-monolith}
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
+      METRICS_ENABLED: "true"
+      LOG_JSON: "true"
+    labels:
+      # Read by Prometheus service discovery in the shared stack.
+      prometheus.scrape: "true"
+      prometheus.path: "/metrics"
+      prometheus.port: "${PORT:-3000}"
+    networks:
+      - gin-network
+      - templates-observability
+
+networks:
+  templates-observability:
+    external: true

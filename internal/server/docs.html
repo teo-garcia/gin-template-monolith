@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>API Docs</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #ffffff;
+        --fg: #111827;
+        --muted: #6b7280;
+        --border: #e5e7eb;
+        --card: #f9fafb;
+        --code: #f3f4f6;
+        --accent: #2563eb;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0b0f19;
+          --fg: #e5e7eb;
+          --muted: #9ca3af;
+          --border: #1f2937;
+          --card: #111827;
+          --code: #1f2937;
+          --accent: #60a5fa;
+        }
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font: 15px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      }
+      main { max-width: 60rem; margin: 0 auto; padding: 2rem 1.25rem 5rem; }
+      header { border-bottom: 1px solid var(--border); padding-bottom: 1.25rem; margin-bottom: 1.5rem; }
+      h1 { font-size: 1.6rem; margin: 0 0 0.25rem; }
+      h2 { font-size: 1.1rem; margin: 2rem 0 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+      p.desc { color: var(--muted); margin: 0.25rem 0; }
+      .op {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        margin-bottom: 0.75rem;
+        background: var(--card);
+        overflow: hidden;
+      }
+      .op summary {
+        cursor: pointer;
+        padding: 0.75rem 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        list-style: none;
+      }
+      .op summary::-webkit-details-marker { display: none; }
+      .method {
+        font: 600 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+        padding: 0.35rem 0.5rem;
+        border-radius: 4px;
+        color: #fff;
+        min-width: 3.6rem;
+        text-align: center;
+      }
+      .get { background: #2563eb; }
+      .post { background: #16a34a; }
+      .patch { background: #d97706; }
+      .put { background: #d97706; }
+      .delete { background: #dc2626; }
+      .path { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+      .summary { color: var(--muted); margin-left: auto; font-size: 13px; }
+      .body { padding: 0 1rem 1rem; border-top: 1px solid var(--border); }
+      table { border-collapse: collapse; width: 100%; margin: 0.5rem 0 1rem; font-size: 13px; }
+      th, td { text-align: left; padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+      th { color: var(--muted); font-weight: 600; }
+      code { background: var(--code); padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 12px; }
+      pre { background: var(--code); padding: 0.75rem; border-radius: 6px; overflow-x: auto; font-size: 12px; }
+      .status { font-family: ui-monospace, monospace; font-weight: 600; }
+      .s2 { color: #16a34a; } .s4 { color: #d97706; } .s5 { color: #dc2626; }
+      a { color: var(--accent); }
+      .err { color: #dc2626; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1 id="title">API Docs</h1>
+        <p class="desc" id="description"></p>
+        <p class="desc">
+          <span id="version"></span> &middot;
+          <a href="/openapi.json">openapi.json</a>
+        </p>
+      </header>
+      <div id="content"><p class="desc">Loading&hellip;</p></div>
+    </main>
+
+    <script>
+      const el = (tag, props = {}, ...children) => {
+        const node = Object.assign(document.createElement(tag), props);
+        for (const child of children.flat()) {
+          if (child != null) node.append(child);
+        }
+        return node;
+      };
+
+      const schemaName = (schema) => {
+        if (!schema) return '';
+        if (schema.$ref) return schema.$ref.split('/').pop();
+        if (schema.allOf) return schema.allOf.map(schemaName).filter(Boolean).join(' + ');
+        if (schema.type === 'array') return schemaName(schema.items) + '[]';
+        return schema.type || 'object';
+      };
+
+      const statusClass = (code) => 's' + String(code).charAt(0);
+
+      function renderOperation(path, method, op) {
+        const details = el('details', { className: 'op' });
+        details.append(
+          el(
+            'summary',
+            {},
+            el('span', { className: 'method ' + method, textContent: method.toUpperCase() }),
+            el('span', { className: 'path', textContent: path }),
+            el('span', { className: 'summary', textContent: op.summary || '' })
+          )
+        );
+
+        const body = el('div', { className: 'body' });
+        if (op.description) body.append(el('p', { className: 'desc', textContent: op.description }));
+
+        const params = op.parameters || [];
+        if (params.length) {
+          body.append(el('h2', { textContent: 'Parameters' }));
+          const rows = params.map((p) =>
+            el(
+              'tr',
+              {},
+              el('td', {}, el('code', { textContent: p.name })),
+              el('td', { textContent: p.in }),
+              el('td', { textContent: p.required ? 'required' : 'optional' }),
+              el('td', { textContent: describeSchema(p.schema) })
+            )
+          );
+          body.append(table(['Name', 'In', 'Required', 'Type'], rows));
+        }
+
+        if (op.requestBody) {
+          const schema = op.requestBody.content['application/json'].schema;
+          body.append(el('h2', { textContent: 'Request body' }));
+          body.append(el('pre', { textContent: JSON.stringify(resolve(schema), null, 2) }));
+        }
+
+        body.append(el('h2', { textContent: 'Responses' }));
+        const rows = Object.entries(op.responses || {}).map(([code, res]) => {
+          const schema = res.content && res.content['application/json'] && res.content['application/json'].schema;
+          return el(
+            'tr',
+            {},
+            el('td', {}, el('span', { className: 'status ' + statusClass(code), textContent: code })),
+            el('td', { textContent: res.description || '' }),
+            el('td', {}, schema ? el('code', { textContent: schemaName(schema) }) : document.createTextNode('—'))
+          );
+        });
+        body.append(table(['Status', 'Description', 'Schema'], rows));
+
+        details.append(body);
+        return details;
+      }
+
+      function table(headers, rows) {
+        return el(
+          'table',
+          {},
+          el('thead', {}, el('tr', {}, headers.map((h) => el('th', { textContent: h })))),
+          el('tbody', {}, rows)
+        );
+      }
+
+      function describeSchema(schema) {
+        if (!schema) return '';
+        let out = schema.type || schemaName(schema);
+        if (schema.enum) out += ' (' + schema.enum.join(' | ') + ')';
+        if (schema.default !== undefined) out += ' default ' + schema.default;
+        return out;
+      }
+
+      let doc = null;
+      function resolve(schema) {
+        if (!schema || typeof schema !== 'object') return schema;
+        if (schema.$ref) {
+          const name = schema.$ref.split('/').pop();
+          return resolve(doc.components.schemas[name]);
+        }
+        if (Array.isArray(schema)) return schema.map(resolve);
+        const out = {};
+        for (const [key, value] of Object.entries(schema)) out[key] = resolve(value);
+        return out;
+      }
+
+      fetch('/openapi.json')
+        .then((res) => {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.json();
+        })
+        .then((spec) => {
+          doc = spec;
+          document.title = spec.info.title + ' — API Docs';
+          document.getElementById('title').textContent = spec.info.title;
+          document.getElementById('description').textContent = spec.info.description || '';
+          document.getElementById('version').textContent = 'Version ' + spec.info.version;
+
+          const content = document.getElementById('content');
+          content.textContent = '';
+
+          const byTag = new Map();
+          for (const [path, item] of Object.entries(spec.paths)) {
+            for (const [method, op] of Object.entries(item)) {
+              if (method === 'parameters') continue;
+              const tag = (op.tags && op.tags[0]) || 'default';
+              if (!byTag.has(tag)) byTag.set(tag, []);
+              const merged = Object.assign({}, op, {
+                parameters: [].concat(item.parameters || [], op.parameters || []),
+              });
+              byTag.get(tag).push([path, method, merged]);
+            }
+          }
+
+          for (const [tag, ops] of byTag) {
+            content.append(el('h2', { textContent: tag }));
+            for (const [path, method, op] of ops) {
+              content.append(renderOperation(path, method, op));
+            }
+          }
+        })
+        .catch((err) => {
+          document.getElementById('content').replaceChildren(
+            el('p', { className: 'err', textContent: 'Could not load /openapi.json: ' + err.message })
+          );
+        });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,22 @@
+# Build artifacts
+bin/
+.air/
+*.test
+*.out
+
+# Coverage
+coverage/
+
+# Generated from golangci-config-shared by `make lint-sync`
+.golangci.yml
+
+# Environment (only the examples are committed)
+.env
+.env.test
+.env.local
+.env.*.local
+
+# Editors
+.idea/
+.vscode/
+.DS_Store
