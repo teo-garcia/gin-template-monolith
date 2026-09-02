@@ -59,16 +59,10 @@ jobs:
         run: make lint-sync
 
       - name: Lint
-        uses: golangci/golangci-lint-action@v9
-        with:
-          version: ${{ env.GOLANGCI_LINT_VERSION }}
-          args: run --config .golangci.yml ./...
+        run: make lint-check
 
       - name: Format check
-        uses: golangci/golangci-lint-action@v9
-        with:
-          version: ${{ env.GOLANGCI_LINT_VERSION }}
-          args: fmt --diff --config .golangci.yml ./...
+        run: make format-check
 
       - name: Build
         run: make build
