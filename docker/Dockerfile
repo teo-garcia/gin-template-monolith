@@ -3,7 +3,7 @@
 # Deliberately free of BuildKit cache mounts so `docker build` works with the
 # classic builder too. CI gets layer caching from the GHA cache backend instead.
 
-FROM golang:1.25.10-alpine AS deps
+FROM golang:1.25.13-alpine AS deps
 WORKDIR /app
 RUN apk add --no-cache git
 # Copy the manifests alone so the dependency layer is cached until they change.

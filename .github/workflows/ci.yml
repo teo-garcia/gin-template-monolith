@@ -55,6 +55,9 @@ jobs:
           go mod tidy
           git diff --exit-code -- go.mod go.sum
 
+      - name: Generate lint config
+        run: make lint-sync
+
       - name: Lint
         uses: golangci/golangci-lint-action@v9
         with:
