@@ -253,9 +253,8 @@ onto the shared baseline.
 4. Decide `DOCS_ENABLED` per environment and set a real `OPENAPI_SERVER_URL`.
 5. Review the environment promotion checklist above before the first deploy.
 
-**Non-goals:** this template has no authentication layer, no background worker,
-and no multi-tenancy. Those are portfolio-level decisions tracked in governance,
-not per-repo additions.
+**Non-goals:** this template does not include authentication, background
+workers, or multi-tenancy.
 
 ---
 
