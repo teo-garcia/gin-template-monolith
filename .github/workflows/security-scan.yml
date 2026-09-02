@@ -17,7 +17,7 @@ jobs:
     name: govulncheck
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
@@ -36,7 +36,7 @@ jobs:
       contents: read
       security-events: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       # Filesystem/config scanning instead of a full image build keeps this
       # cheap; image scanning belongs in the docker-build workflow.
       - name: Scan dependencies and IaC
