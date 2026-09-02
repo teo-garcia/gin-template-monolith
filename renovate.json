@@ -3,13 +3,6 @@
   "extends": ["github>teo-garcia/templates//renovate/active"],
   "packageRules": [
     {
-      "description": "Review shared Go configuration releases after their producer checks pass",
-      "groupName": "teo-garcia shared configs",
-      "matchPackageNames": ["github.com/teo-garcia/**"],
-      "dependencyDashboardApproval": true,
-      "reviewers": ["teo-garcia"]
-    },
-    {
       "description": "Review golangci-lint changes because they can change lint output",
       "groupName": "golangci-lint",
       "matchPackageNames": ["github.com/golangci/golangci-lint{/,}**"],
