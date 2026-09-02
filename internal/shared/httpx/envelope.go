@@ -24,7 +24,9 @@ type SuccessEnvelope struct {
 type SuccessMeta struct {
 	RequestID string `json:"requestId,omitempty"`
 	Version   string `json:"version"`
-	Duration  string `json:"duration,omitempty"`
+	// Milliseconds. A number, not a formatted string: every other template in
+	// the portfolio emits meta.duration as a number and clients compare them.
+	Duration int64 `json:"duration"`
 }
 
 // ErrorEnvelope wraps every 4xx and 5xx response body.
@@ -76,7 +78,7 @@ func NewSuccessEnvelope(
 		Meta: SuccessMeta{
 			RequestID: requestID,
 			Version:   version,
-			Duration:  duration.String(),
+			Duration:  duration.Milliseconds(),
 		},
 	}
 }

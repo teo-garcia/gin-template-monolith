@@ -106,9 +106,12 @@ func registerSystemRoutes(engine *gin.Engine, cfg config.Config, deps Dependenci
 	engine.GET("/health/live", checker.Live())
 	engine.GET("/health/ready", checker.Ready())
 
+	// {name, status, version} is the shared service-info shape every template
+	// answers with; env and docs are Go-template extras.
 	engine.GET("/", func(c *gin.Context) {
 		httpx.OK(c, gin.H{
 			"name":    cfg.App.Name,
+			"status":  "ok",
 			"version": cfg.App.Version,
 			"env":     cfg.App.Env,
 			"docs":    docsPath(cfg),

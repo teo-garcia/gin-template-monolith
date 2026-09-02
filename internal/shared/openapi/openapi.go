@@ -280,7 +280,7 @@ func schemas() map[string]any {
 					"properties": map[string]any{
 						"requestId": map[string]any{"type": "string"},
 						"version":   map[string]any{"type": "string", "example": "1"},
-						"duration":  map[string]any{"type": "string", "example": "1.2ms"},
+						"duration":  map[string]any{"type": "integer", "minimum": 0, "example": 2},
 					},
 				},
 			},
