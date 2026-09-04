@@ -16,8 +16,10 @@ services:
       prometheus.path: "/metrics"
       prometheus.port: "${PORT:-3000}"
     networks:
-      - gin-network
-      - templates-observability
+      gin-network:
+      templates-observability:
+        aliases:
+          - gin-template-monolith
 
 networks:
   templates-observability:
