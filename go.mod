@@ -1,6 +1,6 @@
 module github.com/teo-garcia/gin-template-monolith
 
-go 1.25.13
+go 1.26.0
 
 require (
 	github.com/caarlos0/env/v11 v11.4.1
@@ -63,7 +63,7 @@ require (
 	go.opentelemetry.io/proto/otlp v1.11.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	golang.org/x/arch v0.29.0 // indirect
-	golang.org/x/crypto v0.55.0 // indirect
+	golang.org/x/crypto v0.56.0 // indirect
 	golang.org/x/net v0.57.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
