@@ -8,9 +8,12 @@ GOLANGCI_LINT_VERSION ?= v2.11.0
 
 BIN_DIR      := $(CURDIR)/bin
 GOLANGCI_LINT := $(BIN_DIR)/golangci-lint
+GOLANGCI_LINT_CACHE ?= $(CURDIR)/.cache/golangci-lint
 LINT_CONFIG  := .golangci.yml
 LINT_OVERLAY := golangci.overrides.yml
 BINARY       := $(BIN_DIR)/api
+
+export GOLANGCI_LINT_CACHE
 
 ENV_FILE ?= .env
 # Export the env file into the recipe's environment without leaking it into
@@ -84,7 +87,7 @@ coverage: ## Run tests with coverage into coverage/ (text + lcov + html)
 	go test $(GOTEST_ARGS)
 	go tool gotest-cover
 
-check: lint-check format-check test ## Single CI gate: lint + format + test
+check: lint-check format-check test coverage ## Single CI gate: lint + format + test + coverage
 
 ## --- Database --------------------------------------------------------------
 

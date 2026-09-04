@@ -6,7 +6,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?logo=go&logoColor=white)](https://go.dev)
-[![Gin](https://img.shields.io/badge/Gin-1.11-00ADD8?logo=go&logoColor=white)](https://gin-gonic.com)
+[![Gin](https://img.shields.io/badge/Gin-1.12-00ADD8?logo=go&logoColor=white)](https://gin-gonic.com)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18-336791?logo=postgresql&logoColor=white)](https://postgresql.org)
 
 Part of the [@teo-garcia/templates](https://github.com/teo-garcia/templates) ecosystem
@@ -19,7 +19,7 @@ Part of the [@teo-garcia/templates](https://github.com/teo-garcia/templates) eco
 
 | Category          | Technologies                                                        |
 | ----------------- | ------------------------------------------------------------------- |
-| **Framework**     | Gin 1.11, `net/http`, go-playground/validator                        |
+| **Framework**     | Gin 1.12, `net/http`, go-playground/validator                        |
 | **Database**      | PostgreSQL 18, pgx/v5 + pgxpool, golang-migrate (embedded SQL)       |
 | **Redis**         | go-redis/v9 for rate limiting and cache                              |
 | **Observability** | `log/slog` JSON logs, Prometheus, OpenTelemetry (OTLP/HTTP)          |
@@ -67,7 +67,7 @@ make docker-dev
 | `make dev` | Load `.env` and start the API |
 | `make build` | Build the production binary into `./bin` |
 | `make start` | Run the production binary |
-| `make check` | Single CI gate: lint + format check + tests |
+| `make check` | Single CI gate: lint + format check + tests + coverage |
 | `make test` | Unit tests with `-race -shuffle=on` (no infrastructure needed) |
 | `make test-integration` | Tests that need Postgres and Redis |
 | `make coverage` | Tests with coverage into `coverage/` (text + html) |

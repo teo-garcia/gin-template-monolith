@@ -14,9 +14,9 @@ FROM deps AS builder
 COPY . .
 # CGO off produces a static binary that runs on a bare distroless/alpine base.
 # -trimpath keeps build host paths out of the binary.
-RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/api ./cmd/api && \
-    CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/migrate ./cmd/migrate && \
-    CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/seed ./cmd/seed
+RUN CGO_ENABLED=0 GOOS=linux go build -p=1 -trimpath -ldflags="-s -w" -o /out/api ./cmd/api && \
+    CGO_ENABLED=0 GOOS=linux go build -p=1 -trimpath -ldflags="-s -w" -o /out/migrate ./cmd/migrate && \
+    CGO_ENABLED=0 GOOS=linux go build -p=1 -trimpath -ldflags="-s -w" -o /out/seed ./cmd/seed
 
 FROM alpine:3.21 AS production
 RUN apk add --no-cache ca-certificates dumb-init wget && \

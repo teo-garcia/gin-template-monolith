@@ -58,11 +58,8 @@ jobs:
       - name: Generate lint config
         run: make lint-sync
 
-      - name: Lint
-        run: make lint-check
-
-      - name: Format check
-        run: make format-check
+      - name: Check
+        run: make check
 
       - name: Build
         run: make build
@@ -73,17 +70,8 @@ jobs:
           APP_ENV: test
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/gin_monolith_test?sslmode=disable
 
-      - name: Tests + coverage
-        run: make coverage
-        env:
-          APP_ENV: test
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432/gin_monolith_test?sslmode=disable
-          REDIS_HOST: localhost
-          REDIS_PORT: 6379
-          THROTTLE_LIMIT: "1000"
-
       - name: Upload coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: coverage-report
