@@ -58,7 +58,7 @@ func (r *PostgresRepository) List(ctx context.Context, filter ListFilter) ([]Tas
 	}
 	if filter.Priority != nil {
 		args = append(args, *filter.Priority)
-		conditions = append(conditions, fmt.Sprintf("priority = $%d", len(args)))
+		conditions = append(conditions, fmt.Sprintf("priority >= $%d", len(args)))
 	}
 
 	args = append(args, filter.PageSize)

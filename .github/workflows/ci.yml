@@ -70,6 +70,12 @@ jobs:
           APP_ENV: test
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/gin_monolith_test?sslmode=disable
 
+      - name: Test Postgres repository
+        run: make test-integration
+        env:
+          APP_ENV: test
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/gin_monolith_test?sslmode=disable
+
       - name: Upload coverage
         uses: actions/upload-artifact@v7
         if: always()
