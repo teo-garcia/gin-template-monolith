@@ -189,6 +189,14 @@ boot on a bad value — all problems are reported at once, not one per restart.
 | `REDIS_PASSWORD` | empty | required |
 | `OTEL_ENABLED` / `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` | `false` / local collector | `true` / the environment's collector |
 
+### Container Releases
+
+Pushing a `vX.Y.Z` tag verifies the production image, then publishes semver tags
+to `ghcr.io/<owner>/<repository>` with an SBOM and provenance attestation. Run
+`make db-deploy` as a separate pre-deploy step. Roll back application code by
+deploying a prior immutable image digest; keep database changes compatible with
+both versions.
+
 ---
 
 ## Observability
