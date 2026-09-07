@@ -4,7 +4,7 @@
 
 # Pinned so a Renovate bump to the linter is a reviewable change, not a
 # surprise diff in CI.
-GOLANGCI_LINT_VERSION ?= v2.11.0
+GOLANGCI_LINT_VERSION ?= v2.12.2
 
 BIN_DIR      := $(CURDIR)/bin
 GOLANGCI_LINT := $(BIN_DIR)/golangci-lint
