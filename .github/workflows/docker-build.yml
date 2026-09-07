@@ -17,6 +17,6 @@ concurrency:
 jobs:
   verify:
     name: Verify production image
-    uses: teo-garcia/templates/.github/workflows/reusable-container-verification.yml@9a0eba11237b3d7b03d58c4bb58c90c8771a2cf4 # delivery-v0.1.1
+    uses: teo-garcia/templates/.github/workflows/reusable-container-verification.yml@e0aa52f1d25edeac907bf1dcf2243af4d958e5e0 # delivery-v0.2.0
     with:
       target: production
