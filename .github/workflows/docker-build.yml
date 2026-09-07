@@ -10,64 +10,13 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: docker-build-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: docker/setup-buildx-action@v3
-      - name: Build production image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: docker/Dockerfile
-          target: production
-          push: false
-          load: true
-          tags: gin-template-monolith:ci
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-      - name: Start smoke dependencies
-        run: |
-          docker network create gin-smoke
-          docker run -d --name gin-smoke-db --network gin-smoke \
-            -e POSTGRES_USER=postgres \
-            -e POSTGRES_PASSWORD=postgres \
-            -e POSTGRES_DB=gin_monolith \
-            postgres:18-alpine
-          docker run -d --name gin-smoke-redis --network gin-smoke redis:alpine
-          for _ in $(seq 1 60); do
-            if docker exec gin-smoke-db pg_isready -U postgres; then
-              exit 0
-            fi
-            sleep 1
-          done
-          docker logs gin-smoke-db
-          exit 1
-      - name: Migrate smoke database
-        run: |
-          docker run --rm --network gin-smoke \
-            -e APP_ENV=production \
-            -e "DATABASE_URL=postgres://postgres:postgres@gin-smoke-db:5432/gin_monolith?sslmode=disable" \
-            gin-template-monolith:ci /app/migrate up
-      - name: Start production image
-        run: |
-          docker run -d --name gin-smoke-app --network gin-smoke -p 3000:3000 \
-            -e APP_ENV=production \
-            -e "DATABASE_URL=postgres://postgres:postgres@gin-smoke-db:5432/gin_monolith?sslmode=disable" \
-            -e REDIS_HOST=gin-smoke-redis \
-            -e OTEL_ENABLED=false \
-            gin-template-monolith:ci
-          for _ in $(seq 1 30); do
-            if curl --fail --silent http://127.0.0.1:3000/health/live; then
-              exit 0
-            fi
-            sleep 1
-          done
-          docker logs gin-smoke-app
-          exit 1
-      - name: Stop smoke containers
-        if: always()
-        run: |
-          docker rm -f gin-smoke-app gin-smoke-db gin-smoke-redis 2>/dev/null || true
-          docker network rm gin-smoke 2>/dev/null || true
+  verify:
+    name: Verify production image
+    uses: teo-garcia/templates/.github/workflows/reusable-container-verification.yml@02a8caa55d7b43f53f8811bb2d644dd90e73a940 # delivery-v0.1.0
+    with:
+      target: production

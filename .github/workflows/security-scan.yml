@@ -1,4 +1,4 @@
-name: Security
+name: Security Scan
 
 on:
   push:
@@ -6,44 +6,38 @@ on:
   pull_request:
     branches: [main]
   schedule:
-    # Monthly, to stay free-tier friendly.
     - cron: "0 6 1 * *"
+  workflow_dispatch:
 
-permissions:
-  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  vulncheck:
+  shared-security:
+    name: Shared security policy
+    permissions:
+      contents: read
+      security-events: write
+    uses: teo-garcia/templates/.github/workflows/reusable-security.yml@02a8caa55d7b43f53f8811bb2d644dd90e73a940 # delivery-v0.1.0
+    with:
+      fail-on-findings: true
+
+  govulncheck:
     name: govulncheck
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v6
+
       - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
           cache: true
-      # govulncheck reports only vulnerabilities actually reachable from this
-      # code, so a finding here is real rather than a transitive-dependency alert.
+
       - name: Run govulncheck
         run: |
           go install golang.org/x/vuln/cmd/govulncheck@v1.7.0
           govulncheck ./...
-
-  filesystem-scan:
-    name: Trivy filesystem
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
-    steps:
-      - uses: actions/checkout@v6
-      # Filesystem/config scanning instead of a full image build keeps this
-      # cheap; image scanning belongs in the docker-build workflow.
-      - name: Scan dependencies and IaC
-        uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          scan-type: fs
-          scan-ref: .
-          severity: HIGH,CRITICAL
-          exit-code: "1"
-          ignore-unfixed: true
