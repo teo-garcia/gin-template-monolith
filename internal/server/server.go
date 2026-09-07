@@ -16,9 +16,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
+	"gorm.io/gorm"
 
 	"github.com/teo-garcia/gin-template-monolith/internal/config"
 	"github.com/teo-garcia/gin-template-monolith/internal/modules/tasks"
@@ -34,10 +34,10 @@ import (
 // Every field is optional so tests can build a router with only what they
 // exercise; the corresponding routes degrade rather than panic.
 type Dependencies struct {
-	Pool    *pgxpool.Pool
-	Redis   *redis.Client
-	Logger  *slog.Logger
-	Metrics *metrics.Registry
+	Database *gorm.DB
+	Redis    *redis.Client
+	Logger   *slog.Logger
+	Metrics  *metrics.Registry
 	// Limiter overrides the rate-limit backend. Defaults to Redis when a client
 	// is present, and to an in-process limiter otherwise.
 	Limiter middleware.Limiter
@@ -101,7 +101,7 @@ func resolveLimiter(deps Dependencies) middleware.Limiter {
 }
 
 func registerSystemRoutes(engine *gin.Engine, cfg config.Config, deps Dependencies) {
-	checker := health.NewChecker(deps.Pool, deps.Redis, cfg.App.Version)
+	checker := health.NewChecker(deps.Database, deps.Redis, cfg.App.Version)
 	engine.GET("/health", checker.Handler())
 	engine.GET("/health/live", checker.Live())
 	engine.GET("/health/ready", checker.Ready())
@@ -136,12 +136,12 @@ func registerSystemRoutes(engine *gin.Engine, cfg config.Config, deps Dependenci
 func registerAPIRoutes(engine *gin.Engine, cfg config.Config, deps Dependencies) {
 	repo := deps.TaskRepository
 	if repo == nil {
-		if deps.Pool == nil {
+		if deps.Database == nil {
 			// Without persistence there is nothing to serve; the system routes
 			// above still work, which is what health checks need.
 			return
 		}
-		repo = tasks.NewPostgresRepository(deps.Pool)
+		repo = tasks.NewGORMRepository(deps.Database)
 	}
 
 	api := engine.Group(cfg.App.APIPrefix)

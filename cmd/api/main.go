@@ -53,11 +53,15 @@ func run() error {
 		return fmt.Errorf("configure tracing: %w", err)
 	}
 
-	pool, err := database.Connect(ctx, cfg)
+	db, err := database.Connect(ctx, cfg)
 	if err != nil {
 		return fmt.Errorf("connect to database: %w", err)
 	}
-	defer pool.Close()
+	defer func() {
+		if err := database.Close(db); err != nil {
+			logger.Warn("closing database failed", slog.String("error", err.Error()))
+		}
+	}()
 
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     cfg.Redis.Addr(),
@@ -81,10 +85,10 @@ func run() error {
 	cancelPing()
 
 	handler := server.New(cfg, server.Dependencies{
-		Pool:    pool,
-		Redis:   rdb,
-		Logger:  logger,
-		Metrics: metrics.New(),
+		Database: db,
+		Redis:    rdb,
+		Logger:   logger,
+		Metrics:  metrics.New(),
 	})
 
 	httpServer := &http.Server{

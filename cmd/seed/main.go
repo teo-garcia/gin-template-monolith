@@ -11,19 +11,26 @@ import (
 	"os"
 	"time"
 
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
+
 	"github.com/teo-garcia/gin-template-monolith/internal/config"
 	"github.com/teo-garcia/gin-template-monolith/internal/shared/database"
 )
 
 // sampleTasks mirrors the seed sets in the Nest, FastAPI, Django, and Spring
 // templates so a generated project looks the same whichever stack it came from.
-var sampleTasks = []struct {
+type seedTask struct {
 	ID          string
 	Title       string
 	Description string
 	Status      string
 	Priority    int
-}{
+}
+
+func (seedTask) TableName() string { return "tasks" }
+
+var sampleTasks = []seedTask{
 	{"seed-task-0001", "Set up local environment", "Copy .env.example and start the Compose stack.", "COMPLETED", 5},
 	{"seed-task-0002", "Review the API contract", "Read /docs and confirm the response envelope.", "IN_PROGRESS", 4},
 	{"seed-task-0003", "Add a domain module", "Copy internal/modules/tasks as the starting point.", "PENDING", 3},
@@ -51,38 +58,33 @@ func run() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	pool, err := database.Connect(ctx, cfg)
+	db, err := database.Connect(ctx, cfg)
 	if err != nil {
 		return fmt.Errorf("connect to database: %w", err)
 	}
-	defer pool.Close()
-
-	const query = `
-		INSERT INTO tasks (id, title, description, status, priority)
-		VALUES ($1, $2, $3, $4, $5)
-		ON CONFLICT (id) DO UPDATE SET
-			title       = EXCLUDED.title,
-			description = EXCLUDED.description,
-			status      = EXCLUDED.status,
-			priority    = EXCLUDED.priority,
-			deleted_at  = NULL`
+	defer func() { _ = database.Close(db) }()
 
 	// One transaction so a partial failure leaves no half-seeded database.
-	tx, err := pool.Begin(ctx)
-	if err != nil {
-		return fmt.Errorf("begin seed transaction: %w", err)
-	}
-	defer func() { _ = tx.Rollback(ctx) }()
-
-	for _, task := range sampleTasks {
-		_, err := tx.Exec(ctx, query,
-			task.ID, task.Title, task.Description, task.Status, task.Priority)
-		if err != nil {
-			return fmt.Errorf("seed task %s: %w", task.ID, err)
+	err = db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		for _, task := range sampleTasks {
+			updates := map[string]any{
+				"title":       task.Title,
+				"description": task.Description,
+				"status":      task.Status,
+				"priority":    task.Priority,
+				"deleted_at":  nil,
+			}
+			result := tx.Clauses(clause.OnConflict{
+				Columns:   []clause.Column{{Name: "id"}},
+				DoUpdates: clause.Assignments(updates),
+			}).Create(&task)
+			if result.Error != nil {
+				return fmt.Errorf("seed task %s: %w", task.ID, result.Error)
+			}
 		}
-	}
-
-	if err := tx.Commit(ctx); err != nil {
+		return nil
+	})
+	if err != nil {
 		return fmt.Errorf("commit seed transaction: %w", err)
 	}
 

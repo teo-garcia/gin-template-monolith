@@ -4,10 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
+	"time"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"gorm.io/gorm"
 )
 
 // ErrNotFound is returned when a task does not exist or is soft-deleted.
@@ -26,189 +25,183 @@ type Repository interface {
 	SoftDelete(ctx context.Context, id string) error
 }
 
-// PostgresRepository is the pgx-backed Repository.
-//
-// All SQL lives here. Query text never leaks into the service or the handler:
-// that is what keeps the domain layer testable and the database swappable.
-type PostgresRepository struct {
-	pool *pgxpool.Pool
+// taskRecord is the GORM persistence model. Keeping database annotations out of
+// Task leaves the domain and HTTP representation independent of the ORM.
+type taskRecord struct {
+	ID          string         `gorm:"column:id;primaryKey"`
+	Title       string         `gorm:"column:title"`
+	Description *string        `gorm:"column:description"`
+	Status      Status         `gorm:"column:status"`
+	Priority    int            `gorm:"column:priority"`
+	CreatedAt   time.Time      `gorm:"column:created_at;->"`
+	UpdatedAt   time.Time      `gorm:"column:updated_at;->"`
+	DeletedAt   gorm.DeletedAt `gorm:"column:deleted_at;index"`
 }
 
-// NewPostgresRepository builds a repository over a pgx pool.
-func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
-	return &PostgresRepository{pool: pool}
+func (taskRecord) TableName() string { return "tasks" }
+
+func recordFromTask(task Task) taskRecord {
+	record := taskRecord{
+		ID:          task.ID,
+		Title:       task.Title,
+		Description: task.Description,
+		Status:      task.Status,
+		Priority:    task.Priority,
+	}
+	if task.DeletedAt != nil {
+		record.DeletedAt = gorm.DeletedAt{Time: *task.DeletedAt, Valid: true}
+	}
+	return record
 }
 
-const taskColumns = `id, title, description, status, priority, created_at, updated_at, deleted_at`
+func (r taskRecord) task() Task {
+	var deletedAt *time.Time
+	if r.DeletedAt.Valid {
+		deletedAt = &r.DeletedAt.Time
+	}
+	return Task{
+		ID:          r.ID,
+		Title:       r.Title,
+		Description: r.Description,
+		Status:      r.Status,
+		Priority:    r.Priority,
+		CreatedAt:   r.CreatedAt,
+		UpdatedAt:   r.UpdatedAt,
+		DeletedAt:   deletedAt,
+	}
+}
 
-// List returns one page of tasks plus the total matching count.
-//
-// The count is computed in the same statement as the page via a window
-// function, so pagination costs one round trip rather than two and cannot see a
-// torn read between the count and the page.
-func (r *PostgresRepository) List(ctx context.Context, filter ListFilter) ([]Task, int, error) {
+// GORMRepository persists tasks through GORM's PostgreSQL dialect.
+type GORMRepository struct {
+	db *gorm.DB
+}
+
+// NewGORMRepository builds a task repository over the shared ORM connection.
+func NewGORMRepository(db *gorm.DB) *GORMRepository {
+	return &GORMRepository{db: db}
+}
+
+// List returns one page of live tasks plus the total matching count.
+func (r *GORMRepository) List(ctx context.Context, filter ListFilter) ([]Task, int, error) {
 	filter.Normalize()
 
-	conditions := []string{"deleted_at IS NULL"}
-	args := []any{}
-
+	query := r.db.WithContext(ctx).Model(&taskRecord{})
 	if filter.Status != nil {
-		args = append(args, string(*filter.Status))
-		conditions = append(conditions, fmt.Sprintf("status = $%d", len(args)))
+		query = query.Where("status = ?", *filter.Status)
 	}
 	if filter.Priority != nil {
-		args = append(args, *filter.Priority)
-		conditions = append(conditions, fmt.Sprintf("priority >= $%d", len(args)))
+		query = query.Where("priority >= ?", *filter.Priority)
 	}
 
-	args = append(args, filter.PageSize)
-	limitPlaceholder := len(args)
-	args = append(args, filter.Offset())
-	offsetPlaceholder := len(args)
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, fmt.Errorf("count tasks: %w", err)
+	}
 
-	query := fmt.Sprintf(`
-		SELECT %s, COUNT(*) OVER() AS total_count
-		FROM tasks
-		WHERE %s
-		ORDER BY priority DESC, created_at DESC
-		LIMIT $%d OFFSET $%d`,
-		taskColumns, strings.Join(conditions, " AND "), limitPlaceholder, offsetPlaceholder)
-
-	rows, err := r.pool.Query(ctx, query, args...)
-	if err != nil {
+	rows := make([]taskRecord, 0, filter.PageSize)
+	if err := query.
+		Order("priority DESC").
+		Order("created_at DESC").
+		Limit(filter.PageSize).
+		Offset(filter.Offset()).
+		Find(&rows).Error; err != nil {
 		return nil, 0, fmt.Errorf("query tasks: %w", err)
 	}
-	defer rows.Close()
 
-	items := make([]Task, 0, filter.PageSize)
-	total := 0
-	for rows.Next() {
-		var t Task
-		var rowTotal int
-		err := rows.Scan(&t.ID, &t.Title, &t.Description, &t.Status,
-			&t.Priority, &t.CreatedAt, &t.UpdatedAt, &t.DeletedAt, &rowTotal)
-		if err != nil {
-			return nil, 0, fmt.Errorf("scan task row: %w", err)
-		}
-		total = rowTotal
-		items = append(items, t)
+	items := make([]Task, len(rows))
+	for i := range rows {
+		items[i] = rows[i].task()
 	}
-	if err := rows.Err(); err != nil {
-		return nil, 0, fmt.Errorf("iterate task rows: %w", err)
-	}
-
-	// An empty page past the end still needs the real total so the client can
-	// tell "no results" from "page out of range".
-	if len(items) == 0 {
-		total, err = r.count(ctx, conditions, args[:len(args)-2])
-		if err != nil {
-			return nil, 0, err
-		}
-	}
-
-	return items, total, nil
-}
-
-func (r *PostgresRepository) count(ctx context.Context, conditions []string, args []any) (int, error) {
-	query := "SELECT COUNT(*) FROM tasks WHERE " + strings.Join(conditions, " AND ")
-	var total int
-	if err := r.pool.QueryRow(ctx, query, args...).Scan(&total); err != nil {
-		return 0, fmt.Errorf("count tasks: %w", err)
-	}
-	return total, nil
+	return items, int(total), nil
 }
 
 // GetByID returns a single live task.
-func (r *PostgresRepository) GetByID(ctx context.Context, id string) (Task, error) {
-	query := "SELECT " + taskColumns + " FROM tasks WHERE id = $1 AND deleted_at IS NULL"
-
-	var t Task
-	err := r.pool.QueryRow(ctx, query, id).Scan(&t.ID, &t.Title, &t.Description,
-		&t.Status, &t.Priority, &t.CreatedAt, &t.UpdatedAt, &t.DeletedAt)
-	if errors.Is(err, pgx.ErrNoRows) {
+func (r *GORMRepository) GetByID(ctx context.Context, id string) (Task, error) {
+	var record taskRecord
+	result := r.db.WithContext(ctx).Where("id = ?", id).First(&record)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return Task{}, ErrNotFound
 	}
-	if err != nil {
-		return Task{}, fmt.Errorf("get task %s: %w", id, err)
+	if result.Error != nil {
+		return Task{}, fmt.Errorf("get task %s: %w", id, result.Error)
 	}
-	return t, nil
+	return record.task(), nil
 }
 
-// Create inserts a task and returns the stored row.
-func (r *PostgresRepository) Create(ctx context.Context, task Task) (Task, error) {
-	query := `
-		INSERT INTO tasks (id, title, description, status, priority)
-		VALUES ($1, $2, $3, $4, $5)
-		RETURNING ` + taskColumns
-
-	var t Task
-	err := r.pool.QueryRow(ctx, query,
-		task.ID, task.Title, task.Description, string(task.Status), task.Priority,
-	).Scan(&t.ID, &t.Title, &t.Description, &t.Status,
-		&t.Priority, &t.CreatedAt, &t.UpdatedAt, &t.DeletedAt)
+// Create inserts a task and returns the stored row, including database-managed
+// timestamps.
+func (r *GORMRepository) Create(ctx context.Context, task Task) (Task, error) {
+	record := recordFromTask(task)
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(&record).Error; err != nil {
+			return err
+		}
+		// created_at and updated_at belong to the database migration, not the
+		// ORM. Read the stored row before commit so the response contains the
+		// authoritative values and a failed read cannot leave a partial create.
+		return tx.Where("id = ?", record.ID).First(&record).Error
+	})
 	if err != nil {
 		return Task{}, fmt.Errorf("insert task: %w", err)
 	}
-	return t, nil
+	return record.task(), nil
 }
 
-// Update applies a partial update and returns the stored row.
-//
-// Only the fields present in the input appear in the SET clause, so a partial
-// update can never blank a column the caller did not mention.
-func (r *PostgresRepository) Update(ctx context.Context, id string, input UpdateInput) (Task, error) {
-	assignments := []string{}
-	args := []any{}
-
+// Update applies only fields present in the input and returns the stored row.
+func (r *GORMRepository) Update(ctx context.Context, id string, input UpdateInput) (Task, error) {
+	updates := make(map[string]any, 4)
 	if input.Title != nil {
-		args = append(args, *input.Title)
-		assignments = append(assignments, fmt.Sprintf("title = $%d", len(args)))
+		updates["title"] = *input.Title
 	}
 	if input.Description != nil {
-		args = append(args, *input.Description)
-		assignments = append(assignments, fmt.Sprintf("description = $%d", len(args)))
+		updates["description"] = *input.Description
 	}
 	if input.Status != nil {
-		args = append(args, string(*input.Status))
-		assignments = append(assignments, fmt.Sprintf("status = $%d", len(args)))
+		updates["status"] = *input.Status
 	}
 	if input.Priority != nil {
-		args = append(args, *input.Priority)
-		assignments = append(assignments, fmt.Sprintf("priority = $%d", len(args)))
+		updates["priority"] = *input.Priority
 	}
-	if len(assignments) == 0 {
+	if len(updates) == 0 {
 		return r.GetByID(ctx, id)
 	}
 
-	args = append(args, id)
-	query := fmt.Sprintf(
-		"UPDATE tasks SET %s WHERE id = $%d AND deleted_at IS NULL RETURNING %s",
-		strings.Join(assignments, ", "), len(args), taskColumns)
+	var updated Task
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		result := tx.Model(&taskRecord{}).Where("id = ?", id).Updates(updates)
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return ErrNotFound
+		}
 
-	var t Task
-	err := r.pool.QueryRow(ctx, query, args...).Scan(&t.ID, &t.Title, &t.Description,
-		&t.Status, &t.Priority, &t.CreatedAt, &t.UpdatedAt, &t.DeletedAt)
-	if errors.Is(err, pgx.ErrNoRows) {
+		var record taskRecord
+		if err := tx.Where("id = ?", id).First(&record).Error; err != nil {
+			return err
+		}
+		updated = record.task()
+		return nil
+	})
+	if errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, ErrNotFound) {
 		return Task{}, ErrNotFound
 	}
 	if err != nil {
 		return Task{}, fmt.Errorf("update task %s: %w", id, err)
 	}
-	return t, nil
+	return updated, nil
 }
 
 // SoftDelete marks a task deleted without removing the row.
 //
-// Tasks carry an audit trail, so deletion is a state change. Hard deletes are
-// reserved for data that must legally disappear.
-func (r *PostgresRepository) SoftDelete(ctx context.Context, id string) error {
-	query := "UPDATE tasks SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL"
-
-	tag, err := r.pool.Exec(ctx, query, id)
-	if err != nil {
-		return fmt.Errorf("delete task %s: %w", id, err)
+// GORM's soft-delete scope automatically excludes deleted rows from every
+// repository query. Hard deletes remain an explicit, exceptional operation.
+func (r *GORMRepository) SoftDelete(ctx context.Context, id string) error {
+	result := r.db.WithContext(ctx).Where("id = ?", id).Delete(&taskRecord{})
+	if result.Error != nil {
+		return fmt.Errorf("delete task %s: %w", id, result.Error)
 	}
-	if tag.RowsAffected() == 0 {
+	if result.RowsAffected == 0 {
 		return ErrNotFound
 	}
 	return nil

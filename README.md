@@ -2,7 +2,7 @@
 
 # Gin Template Monolith
 
-**Production-ready Gin monolith with pgx, migrations, Redis, health checks, metrics, and traces**
+**Production-ready Gin monolith with GORM, migrations, Redis, health checks, metrics, and traces**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?logo=go&logoColor=white)](https://go.dev)
@@ -20,7 +20,7 @@ Part of the [@teo-garcia/templates](https://github.com/teo-garcia/templates) eco
 | Category          | Technologies                                                        |
 | ----------------- | ------------------------------------------------------------------- |
 | **Framework**     | Gin 1.12, `net/http`, go-playground/validator                        |
-| **Database**      | PostgreSQL 18, pgx/v5 + pgxpool, golang-migrate (embedded SQL)       |
+| **Database**      | PostgreSQL 18, GORM, golang-migrate (embedded SQL)                   |
 | **Redis**         | go-redis/v9 for rate limiting and cache                              |
 | **Observability** | `log/slog` JSON logs, Prometheus, OpenTelemetry (OTLP/HTTP)          |
 | **Type Safety**   | Go 1.25, generics on the pagination envelope, typed domain errors    |
@@ -135,7 +135,7 @@ internal/
     metrics/    Prometheus registry and instrumentation
     logging/    slog setup
     tracing/    OpenTelemetry setup
-    database/   pgx pool, migrator
+    database/   GORM connection pool, migrator
     openapi/    OpenAPI document builder
 migrations/     embedded SQL migrations
 ```

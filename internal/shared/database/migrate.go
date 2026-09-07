@@ -8,9 +8,6 @@ import (
 	// Registers the "postgres" migration driver with golang-migrate.
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
-	// Registers the "pgx" database/sql driver so golang-migrate can open a
-	// connection with the same DATABASE_URL the pgx pool uses.
-	_ "github.com/jackc/pgx/v5/stdlib"
 
 	"github.com/teo-garcia/gin-template-monolith/migrations"
 )

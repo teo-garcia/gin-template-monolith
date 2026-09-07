@@ -9,12 +9,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-
+	"github.com/teo-garcia/gin-template-monolith/internal/config"
 	"github.com/teo-garcia/gin-template-monolith/internal/modules/tasks"
+	"github.com/teo-garcia/gin-template-monolith/internal/shared/database"
 )
 
-func TestPostgresRepositoryLifecycle(t *testing.T) {
+func TestGORMRepositoryLifecycle(t *testing.T) {
 	databaseURL := os.Getenv("DATABASE_URL")
 	if databaseURL == "" {
 		t.Fatal("DATABASE_URL is required for integration tests")
@@ -23,28 +23,32 @@ func TestPostgresRepositoryLifecycle(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	t.Cleanup(cancel)
 
-	pool, err := pgxpool.New(ctx, databaseURL)
+	cfg := config.Config{Database: config.Database{
+		URL:         databaseURL,
+		PoolMax:     5,
+		PoolMin:     1,
+		MaxLifetime: time.Hour,
+		ConnTimeout: 5 * time.Second,
+	}}
+	db, err := database.Connect(ctx, cfg)
 	if err != nil {
 		t.Fatalf("connect to Postgres: %v", err)
 	}
-	t.Cleanup(pool.Close)
-	if err := pool.Ping(ctx); err != nil {
-		t.Fatalf("ping Postgres: %v", err)
-	}
+	t.Cleanup(func() { _ = database.Close(db) })
 
-	if _, err := pool.Exec(ctx, "TRUNCATE TABLE tasks"); err != nil {
+	if err := db.WithContext(ctx).Exec("TRUNCATE TABLE tasks").Error; err != nil {
 		t.Fatalf("reset tasks table: %v", err)
 	}
 	t.Cleanup(func() {
 		cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cleanupCancel()
-		if _, cleanupErr := pool.Exec(cleanupCtx, "TRUNCATE TABLE tasks"); cleanupErr != nil {
+		if cleanupErr := db.WithContext(cleanupCtx).Exec("TRUNCATE TABLE tasks").Error; cleanupErr != nil {
 			t.Errorf("clean tasks table: %v", cleanupErr)
 		}
 	})
 
-	repository := tasks.NewPostgresRepository(pool)
-	description := "stored by pgx"
+	repository := tasks.NewGORMRepository(db)
+	description := "stored by GORM"
 
 	low, err := repository.Create(ctx, tasks.Task{
 		ID:       "integration-low",

@@ -19,8 +19,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
+	"gorm.io/gorm"
 
 	"github.com/teo-garcia/gin-template-monolith/internal/shared/database"
 )
@@ -52,15 +52,15 @@ type Response struct {
 
 // Checker probes the service's dependencies.
 type Checker struct {
-	pool    *pgxpool.Pool
+	db      *gorm.DB
 	redis   *redis.Client
 	version string
 }
 
 // NewChecker builds a checker. Either dependency may be nil, in which case it
 // is simply not reported.
-func NewChecker(pool *pgxpool.Pool, rdb *redis.Client, version string) *Checker {
-	return &Checker{pool: pool, redis: rdb, version: version}
+func NewChecker(db *gorm.DB, rdb *redis.Client, version string) *Checker {
+	return &Checker{db: db, redis: rdb, version: version}
 }
 
 // resolveStatus aggregates dependency checks into the overall status:
@@ -93,7 +93,7 @@ func resolveStatus(checks map[string]string) string {
 func (c *Checker) Check(ctx context.Context) Response {
 	checks := map[string]string{}
 
-	if c.pool != nil {
+	if c.db != nil {
 		checks["database"] = c.checkDatabase(ctx)
 	}
 	if c.redis != nil {
@@ -109,7 +109,7 @@ func (c *Checker) Check(ctx context.Context) Response {
 }
 
 func (c *Checker) checkDatabase(ctx context.Context) string {
-	if err := database.Ping(ctx, c.pool, checkTimeout); err != nil {
+	if err := database.Ping(ctx, c.db, checkTimeout); err != nil {
 		return CheckDown
 	}
 	return CheckUp
