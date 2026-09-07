@@ -19,7 +19,7 @@ jobs:
     permissions:
       contents: read
       security-events: write
-    uses: teo-garcia/templates/.github/workflows/reusable-security.yml@02a8caa55d7b43f53f8811bb2d644dd90e73a940 # delivery-v0.1.0
+    uses: teo-garcia/templates/.github/workflows/reusable-security.yml@9a0eba11237b3d7b03d58c4bb58c90c8771a2cf4 # delivery-v0.1.1
     with:
       fail-on-findings: true
 
