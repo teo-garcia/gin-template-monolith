@@ -23,14 +23,17 @@ docker run --detach --name gin-smoke-db \
   postgres:18-alpine
 docker run --detach --name gin-smoke-redis --network "$network" redis:alpine
 
+database_ready=false
 for _ in $(seq 1 60); do
-  if docker exec gin-smoke-db pg_isready -U postgres; then
+  if docker logs gin-smoke-db 2>&1 | grep --quiet "PostgreSQL init process complete" &&
+    docker exec gin-smoke-db pg_isready -U postgres -d gin_monolith >/dev/null; then
+    database_ready=true
     break
   fi
   sleep 1
 done
 
-if ! docker exec gin-smoke-db pg_isready -U postgres; then
+if [[ $database_ready != true ]]; then
   docker logs gin-smoke-db
   exit 1
 fi
