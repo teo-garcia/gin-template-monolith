@@ -202,7 +202,8 @@ both versions.
 ## Observability
 
 - Structured JSON logs via `log/slog`; `LOG_LEVEL` controls verbosity and
-  `LOG_JSON=false` gives readable local output.
+  `LOG_JSON=false` gives readable local output. Request events include trace and
+  span IDs when tracing is active, and omit query strings and client IPs.
 - `X-Request-ID` round-trips: an inbound value is preserved, otherwise one is
   generated. It appears in every log line and in `meta.requestId`.
 - Prometheus at `/metrics`: `http_requests_total`,

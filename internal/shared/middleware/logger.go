@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // quietPaths are scraped or polled constantly; logging them would bury real
@@ -21,7 +22,6 @@ func Logger(logger *slog.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
 		path := c.Request.URL.Path
-		query := c.Request.URL.RawQuery
 
 		c.Next()
 
@@ -38,10 +38,14 @@ func Logger(logger *slog.Logger) gin.HandlerFunc {
 			slog.Int("status", status),
 			slog.Duration("duration", time.Since(start)),
 			slog.Int("bytes", c.Writer.Size()),
-			slog.String("ip", c.ClientIP()),
 		}
-		if query != "" {
-			attrs = append(attrs, slog.String("query", query))
+		spanContext := trace.SpanContextFromContext(c.Request.Context())
+		if spanContext.IsValid() {
+			attrs = append(
+				attrs,
+				slog.String("trace_id", spanContext.TraceID().String()),
+				slog.String("span_id", spanContext.SpanID().String()),
+			)
 		}
 
 		ctx := c.Request.Context()
