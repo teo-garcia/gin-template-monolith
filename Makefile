@@ -40,7 +40,7 @@ start-prod: start ## Alias for start
 
 ## --- Quality ---------------------------------------------------------------
 
-$(GOLANGCI_LINT): Makefile
+$(GOLANGCI_LINT): Makefile go.mod
 	GOBIN=$(BIN_DIR) go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 
 tools: $(GOLANGCI_LINT) ## Install pinned dev tools into ./bin
