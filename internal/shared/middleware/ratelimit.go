@@ -144,7 +144,8 @@ func Throttle(limiter Limiter, cfg config.Config, logger *slog.Logger) gin.Handl
 			retryAfter := max(int(time.Until(reset).Seconds()), 1)
 			h.Set("Retry-After", strconv.Itoa(retryAfter))
 			httpx.RespondError(c, httpx.NewRateLimitError(
-				"Too many requests, please try again later"))
+				"Too many requests, please try again later",
+			))
 			return
 		}
 

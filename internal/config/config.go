@@ -130,7 +130,8 @@ func (c Config) Validate() error {
 	case "development", "test", "staging", "production":
 	default:
 		problems = append(problems, fmt.Errorf(
-			"APP_ENV %q must be development, test, staging, or production", c.App.Env))
+			"APP_ENV %q must be development, test, staging, or production", c.App.Env,
+		))
 	}
 
 	if c.App.Port < 1 || c.App.Port > 65535 {
@@ -160,7 +161,8 @@ func (c Config) Validate() error {
 	if c.Database.PoolMin < 0 || c.Database.PoolMin > c.Database.PoolMax {
 		problems = append(problems, fmt.Errorf(
 			"DATABASE_POOL_MIN %d must be between 0 and DATABASE_POOL_MAX (%d)",
-			c.Database.PoolMin, c.Database.PoolMax))
+			c.Database.PoolMin, c.Database.PoolMax,
+		))
 	}
 
 	if c.Throttle.TTL < 1 {
@@ -182,13 +184,15 @@ func (c Config) Validate() error {
 	case "debug", "info", "warn", "error":
 	default:
 		problems = append(problems, fmt.Errorf(
-			"LOG_LEVEL %q must be debug, info, warn, or error", c.Log.Level))
+			"LOG_LEVEL %q must be debug, info, warn, or error", c.Log.Level,
+		))
 	}
 
 	if c.OTel.Enabled {
 		if _, err := url.Parse(c.OTel.Endpoint); err != nil {
 			problems = append(problems, fmt.Errorf(
-				"OTEL_EXPORTER_OTLP_TRACES_ENDPOINT is not a valid URL: %w", err))
+				"OTEL_EXPORTER_OTLP_TRACES_ENDPOINT is not a valid URL: %w", err,
+			))
 		}
 	}
 

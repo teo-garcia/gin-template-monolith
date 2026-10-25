@@ -5,7 +5,7 @@
 **Production-ready Gin monolith with GORM, migrations, Redis, health checks, metrics, and traces**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Go](https://img.shields.io/badge/Go-1.25-00ADD8?logo=go&logoColor=white)](https://go.dev)
+[![Go](https://img.shields.io/badge/Go-1.26-00ADD8?logo=go&logoColor=white)](https://go.dev)
 [![Gin](https://img.shields.io/badge/Gin-1.12-00ADD8?logo=go&logoColor=white)](https://gin-gonic.com)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18-336791?logo=postgresql&logoColor=white)](https://postgresql.org)
 
@@ -23,7 +23,7 @@ Part of the [@teo-garcia/templates](https://github.com/teo-garcia/templates) eco
 | **Database**      | PostgreSQL 18, GORM, golang-migrate (embedded SQL)                   |
 | **Redis**         | go-redis/v9 for rate limiting and cache                              |
 | **Observability** | `log/slog` JSON logs, Prometheus, OpenTelemetry (OTLP/HTTP)          |
-| **Type Safety**   | Go 1.25, generics on the pagination envelope, typed domain errors    |
+| **Type Safety**   | Go 1.26, generics on the pagination envelope, typed domain errors    |
 | **Testing**       | stdlib `testing`, `httptest`, race detector, in-memory repositories  |
 | **Code Quality**  | `golangci-config-shared` (lint + format), `gotest-config-shared`     |
 | **DevOps**        | Docker (multi-stage), Compose, GitHub Actions CI/CD                  |
@@ -32,7 +32,7 @@ Part of the [@teo-garcia/templates](https://github.com/teo-garcia/templates) eco
 
 ## Requirements
 
-- Go 1.25+
+- Go 1.26.10+
 - Docker and Docker Compose
 - PostgreSQL 18 + Redis (via Compose)
 
