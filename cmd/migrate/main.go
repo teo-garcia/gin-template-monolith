@@ -53,7 +53,8 @@ func run(args []string) error {
 	// would compound an unknown state, so stop and demand a human.
 	if dirty && command != "version" {
 		return fmt.Errorf(
-			"schema version %d is dirty; resolve it manually before running migrations", version)
+			"schema version %d is dirty; resolve it manually before running migrations", version,
+		)
 	}
 
 	switch command {

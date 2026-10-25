@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [main]
   schedule:
-    - cron: "0 6 1 * *"
+    - cron: "0 9 * * 1"
   workflow_dispatch:
 
 concurrency:
@@ -41,3 +41,20 @@ jobs:
         run: |
           go install golang.org/x/vuln/cmd/govulncheck@v1.7.0
           govulncheck ./...
+
+  security:
+    name: Security
+    if: always()
+    needs: [shared-security, govulncheck]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Require successful security checks
+        env:
+          SHARED_SECURITY_RESULT: ${{ needs.shared-security.result }}
+          AUDIT_RESULT: ${{ needs.govulncheck.result }}
+        run: |
+          test "$SHARED_SECURITY_RESULT" = success
+          test "$AUDIT_RESULT" = success

@@ -4,7 +4,7 @@
 
 # Pinned so a Renovate bump to the linter is a reviewable change, not a
 # surprise diff in CI.
-GOLANGCI_LINT_VERSION ?= v2.12.2
+GOLANGCI_LINT_VERSION ?= v2.15.0
 
 BIN_DIR      := $(CURDIR)/bin
 GOLANGCI_LINT := $(BIN_DIR)/golangci-lint
@@ -40,7 +40,7 @@ start-prod: start ## Alias for start
 
 ## --- Quality ---------------------------------------------------------------
 
-$(GOLANGCI_LINT):
+$(GOLANGCI_LINT): Makefile
 	GOBIN=$(BIN_DIR) go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 
 tools: $(GOLANGCI_LINT) ## Install pinned dev tools into ./bin
