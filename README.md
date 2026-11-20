@@ -32,7 +32,7 @@ Part of the [@teo-garcia/templates](https://github.com/teo-garcia/templates) eco
 
 ## Requirements
 
-- Go 1.26.10+
+- Go 1.26.11+
 - Docker and Docker Compose
 - PostgreSQL 18 + Redis (via Compose)
 
