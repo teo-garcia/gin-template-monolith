@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.7
+# syntax=docker/dockerfile:1.29
 #
 # Deliberately free of BuildKit cache mounts so `docker build` works with the
 # classic builder too. CI gets layer caching from the GHA cache backend instead.
@@ -18,7 +18,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -p=1 -trimpath -ldflags="-s -w" -o /out/ap
     CGO_ENABLED=0 GOOS=linux go build -p=1 -trimpath -ldflags="-s -w" -o /out/migrate ./cmd/migrate && \
     CGO_ENABLED=0 GOOS=linux go build -p=1 -trimpath -ldflags="-s -w" -o /out/seed ./cmd/seed
 
-FROM alpine:3.21 AS production
+FROM alpine:3.24 AS production
 RUN apk add --no-cache ca-certificates dumb-init wget && \
     addgroup -g 1001 -S app && \
     adduser -S app -u 1001 -G app
