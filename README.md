@@ -23,7 +23,7 @@ Part of the [@teo-garcia/templates](https://github.com/teo-garcia/templates) eco
 | **Database**      | PostgreSQL 18, GORM, golang-migrate (embedded SQL)                   |
 | **Redis**         | go-redis/v9 for rate limiting and cache                              |
 | **Observability** | `log/slog` JSON logs, Prometheus, OpenTelemetry (OTLP/HTTP)          |
-| **Type Safety**   | Go 1.26, generics on the pagination envelope, typed domain errors    |
+| **Type Safety**   | Go 1.27, generics on the pagination envelope, typed domain errors    |
 | **Testing**       | stdlib `testing`, `httptest`, race detector, in-memory repositories  |
 | **Code Quality**  | `golangci-config-shared` (lint + format), `gotest-config-shared`     |
 | **DevOps**        | Docker (multi-stage), Compose, GitHub Actions CI/CD                  |
@@ -32,7 +32,7 @@ Part of the [@teo-garcia/templates](https://github.com/teo-garcia/templates) eco
 
 ## Requirements
 
-- Go 1.26.11+
+- Go 1.27.4+
 - Docker and Docker Compose
 - PostgreSQL 18 + Redis (via Compose)
 
