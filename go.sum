@@ -164,10 +164,10 @@ github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXl
 github.com/stretchr/testify v1.10.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
 github.com/stretchr/testify v1.12.1 h1:EuwCh5fleGS7H32xRwO3wRGT7DxrDhLAT6FF8MpWDWE=
 github.com/stretchr/testify v1.12.1/go.mod h1:MDEgiDPPsNp5cuIrHPPCyornHKgEVbtFUmoNlxoYthg=
-github.com/teo-garcia/golangci-config-shared v0.0.0-20260824221750-e2e3770f31f0 h1:0WvalxzJ0OusWUg57iUNVZYx+epBs/JxxpqebUvRbTE=
-github.com/teo-garcia/golangci-config-shared v0.0.0-20260824221750-e2e3770f31f0/go.mod h1:JrGytUPyKz9URyMy5xJZ9Vey/6VibG5rOXMixrh3W+g=
-github.com/teo-garcia/gotest-config-shared v0.0.0-20260824221820-3eb748a414cc h1:vDXQr2oT6a9R7KD0L0fqxO+2+9spCPVjBX0Ck1OdEhM=
-github.com/teo-garcia/gotest-config-shared v0.0.0-20260824221820-3eb748a414cc/go.mod h1:mI3CVaJzcY/pey5JeelPn+g6xCdas3YM3fsoiJoRqoA=
+github.com/teo-garcia/golangci-config-shared v0.1.0 h1:PPOlI185nd7mYg77evXJnD4HGDUNOrQ3oQ5UyNyjL6Y=
+github.com/teo-garcia/golangci-config-shared v0.1.0/go.mod h1:phd/7O8TL6EBDYXpcaTm2cb1V1xaW9DYzDetDi3r+vA=
+github.com/teo-garcia/gotest-config-shared v0.1.0 h1:JHtypfqBIW++nJzUo3DA9XMAv62Dzxrmv0xx2GNm2c0=
+github.com/teo-garcia/gotest-config-shared v0.1.0/go.mod h1:Tefb00iqcyA5Ui7Xj2ouw4DiN+h6D0zpfg/4qMDC9vc=
 github.com/twitchyliquid64/golang-asm v0.15.1 h1:SU5vSMR7hnwNxj24w34ZyCi/FmDZTkS4MhqMhdFk5YI=
 github.com/twitchyliquid64/golang-asm v0.15.1/go.mod h1:a1lVb/DtPvCB8fslRZhAngC2+aY1QWCk3Cedj/Gdt08=
 github.com/ugorji/go/codec v1.3.2 h1:zkEASHHyEClGeURfgNT9PJZVfAbs9oEX9QXggwWNJbc=
